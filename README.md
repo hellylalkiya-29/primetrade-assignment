@@ -8,6 +8,8 @@ This repository contains the complete technical assessment for the Full-Stack De
 * 🏢 **Submission Reference Tracking Form:** [Click Here to View Google Form Link / Status Handshake](PASTE_YOUR_GOOGLE_FORM_LINK_HERE)
 * 🌐 **Frontend Dashboard Architecture:** Located inside the `/frontend` directory (`index.html`).
 * ⚙️ **Backend Runtime Environment:** Located inside the `/backend` cluster directory (`server.js`).
+* DEPLOY LINK : https://hellylalkiya-29.github.io/primetrade-assignment/
+  
 
 ---
 
