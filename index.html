@@ -1,6 +1,111 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="refresh" content="0; url=./frontend/index.html">
-  </head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primetrade Interface Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans p-6 md:p-12">
+  <div class="max-w-5xl mx-auto space-y-8">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-6 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">Primetrade.ai Console</h1>
+        <p class="text-sm text-gray-400 mt-1">Full stack verification sandbox.</p>
+      </div>
+      <div id="runtime-badge" class="bg-gray-900 border border-gray-800 px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-red-500" id="status-dot"></span>
+        <span id="session-lbl">No Active Session</span>
+      </div>
+    </header>
+
+    <div id="alert-console" class="hidden p-4 rounded-lg font-mono text-xs border transition-all duration-300 shadow-lg"></div>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section class="lg:col-span-1 space-y-6">
+        <div class="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl space-y-4">
+          <h2 class="text-lg font-bold text-gray-200 border-b border-gray-800 pb-2">Identity Gateway</h2>
+          <div class="space-y-3">
+            <input id="u-name" type="text" placeholder="Full Name" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md">
+            <input id="u-email" type="email" placeholder="Email" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md">
+            <input id="u-pass" type="password" placeholder="Password" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md">
+            <select id="u-role" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md text-gray-300">
+              <option value="user">Standard User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="pt-2 flex flex-wrap gap-2">
+            <button onclick="executeAuth('/api/v1/auth/login')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs py-2.5 rounded-md">Sign In</button>
+            <button onclick="executeAuth('/api/v1/auth/register')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium text-xs py-2.5 rounded-md">Register</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="lg:col-span-2">
+        <div id="main-panel" class="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl opacity-40 pointer-events-none">
+          <h2 class="text-lg font-bold mb-4">Task Records Database</h2>
+          <div id="data-viewport" class="space-y-3">
+            <p class="text-center text-gray-500 pt-12">Session authorization required.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Agar API dusri jagah hai, toh URL yahan update karein
+    const SERVER_URL = 'http://localhost:5000'; 
+
+    function displayLog(content, statusValid = true) {
+      const logger = document.getElementById('alert-console');
+      logger.className = `p-4 rounded-lg font-mono text-xs border transition-all shadow-lg ${statusValid ? 'bg-emerald-950/80 text-emerald-400' : 'bg-red-950/80 text-red-400'}`;
+      logger.innerText = content;
+      logger.classList.remove('hidden');
+    }
+
+    function evaluateSessionState() {
+      const activeToken = localStorage.getItem('jwt');
+      const panel = document.getElementById('main-panel');
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('session-lbl');
+
+      if (activeToken) {
+        panel.classList.remove('opacity-40', 'pointer-events-none');
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        text.innerText = "Session Active";
+      } else {
+        panel.classList.add('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    async function executeAuth(endpoint) {
+      const dataPayload = {
+        email: document.getElementById('u-email').value,
+        password: document.getElementById('u-pass').value,
+        name: document.getElementById('u-name').value,
+        role: document.getElementById('u-role').value
+      };
+      
+      try {
+        const response = await fetch(`${SERVER_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dataPayload)
+        });
+        const json = await response.json();
+        if (json.success) {
+          localStorage.setItem('jwt', json.token);
+          evaluateSessionState();
+          displayLog("Success!");
+        } else {
+          displayLog(json.message, false);
+        }
+      } catch (err) {
+        displayLog("Network Error: Backend not found.", false);
+      }
+    }
+
+    evaluateSessionState();
+  </script>
+</body>
 </html>
