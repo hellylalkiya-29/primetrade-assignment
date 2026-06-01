@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primetrade Interface Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans p-6 md:p-12">
+  <div class="max-w-5xl mx-auto space-y-8">
+    
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-6 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">Primetrade.ai API Evaluation Console</h1>
+        <p class="text-sm text-gray-400 mt-1">Full stack verification sandbox for verifying authentication, JWT persistence, and RBAC isolation hooks.</p>
+      </div>
+      <div id="runtime-badge" class="bg-gray-900 border border-gray-800 px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-red-500" id="status-dot"></span>
+        <span id="session-lbl">No Active Session</span>
+      </div>
+    </header>
+
+    <div id="alert-console" class="hidden p-4 rounded-lg font-mono text-xs border transition-all duration-300 shadow-lg"></div>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section class="lg:col-span-1 space-y-6">
+        <div class="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl space-y-4">
+          <h2 class="text-lg font-bold text-gray-200 border-b border-gray-800 pb-2">Identity & Verification Gateway</h2>
+          
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-400 block mb-1">Full Name (Only required for Register)</label>
+              <input id="u-name" type="text" placeholder="John Doe" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md focus:border-emerald-500 focus:outline-none transition-colors">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 block mb-1">Email Address</label>
+              <input id="u-email" type="email" placeholder="tester@domain.com" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md focus:border-emerald-500 focus:outline-none transition-colors">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 block mb-1">Account Secure Password</label>
+              <input id="u-pass" type="password" placeholder="••••••••" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md focus:border-emerald-500 focus:outline-none transition-colors">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 block mb-1">Target Permission Assignment</label>
+              <select id="u-role" class="w-full text-sm p-2.5 bg-gray-950 border border-gray-800 rounded-md focus:border-emerald-500 focus:outline-none text-gray-300">
+                <option value="user">Standard Account User</option>
+                <option value="admin">System Administration Layer (Admin)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-2 flex flex-wrap gap-2">
+            <button onclick="executeAuth('/api/v1/auth/login')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs py-2.5 px-4 rounded-md transition-all">Sign In</button>
+            <button onclick="executeAuth('/api/v1/auth/register')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium text-xs py-2.5 px-4 rounded-md transition-all">Register</button>
+          </div>
+          <button onclick="purgeSession()" class="w-full bg-red-950/40 text-red-400 border border-red-900/30 hover:bg-red-900/30 text-xs py-2 rounded-md transition-all font-mono">Flush Session Credentials</button>
+        </div>
+      </section>
+
+      <section class="lg:col-span-2 space-y-6">
+        <div id="main-panel" class="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl opacity-40 pointer-events-none transition-opacity duration-300">
+          <h2 class="text-lg font-bold text-gray-200 border-b border-gray-800 pb-2 mb-4">Secondary Entity Engine: Tasks Records Database</h2>
+          
+          <div class="bg-gray-950 border border-gray-800 p-4 rounded-lg mb-6 flex flex-col md:flex-row gap-3 items-end">
+            <div class="flex-1 w-full">
+              <label class="text-xs text-gray-400 block mb-1">Resource Title / Header</label>
+              <input id="t-title" type="text" placeholder="Complete system vulnerability scanning..." class="w-full text-sm p-2.5 bg-gray-900 border border-gray-800 rounded-md focus:border-emerald-500 focus:outline-none">
+            </div>
+            <button onclick="createNewTask()" class="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-xs font-bold transition-all whitespace-nowrap">Create Object Entity</button>
+          </div>
+
+          <div id="data-viewport" class="space-y-3 min-h-[200px]">
+            <p class="text-center text-gray-600 text-sm italic pt-12">Session token authorization sequence required to query secure network streams.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SERVER_URL = 'http://localhost:5000';
+
+    function displayLog(content, statusValid = true) {
+      const logger = document.getElementById('alert-console');
+      logger.className = `p-4 rounded-lg font-mono text-xs border transition-all shadow-lg ${
+        statusValid ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' : 'bg-red-950/80 text-red-400 border-red-900'
+      }`;
+      logger.innerText = typeof content === 'object' ? JSON.stringify(content, null, 2) : content;
+      logger.classList.remove('hidden');
+    }
+
+    function evaluateSessionState() {
+      const activeToken = localStorage.getItem('jwt');
+      const activeRole = localStorage.getItem('role');
+      const panel = document.getElementById('main-panel');
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('session-lbl');
+
+      if (activeToken) {
+        panel.classList.remove('opacity-40', 'pointer-events-none');
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        text.innerText = `Token Active [Privilege Layer: ${activeRole.toUpperCase()}]`;
+        queryEntities();
+      } else {
+        panel.classList.add('opacity-40', 'pointer-events-none');
+        dot.className = "w-2 h-2 rounded-full bg-red-500";
+        text.innerText = "No Active Session";
+        document.getElementById('data-viewport').innerHTML = `<p class="text-center text-gray-600 text-sm italic pt-12">Session token authorization sequence required to query secure network streams.</p>`;
+      }
+    }
+
+    async function executeAuth(endpoint) {
+      const dataPayload = {
+        email: document.getElementById('u-email').value,
+        password: document.getElementById('u-pass').value
+      };
+      if (endpoint.includes('register')) {
+        dataPayload.name = document.getElementById('u-name').value || "Default Evaluator";
+        dataPayload.role = document.getElementById('u-role').value;
+      }
+
+      try {
+        const response = await fetch(`${SERVER_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dataPayload)
+        });
+        const parseJson = await response.json();
+        
+        if (parseJson.success) {
+          localStorage.setItem('jwt', parseJson.token);
+          localStorage.setItem('role', parseJson.role);
+          displayLog(`Handshake Confirmed. System stored Authorization Vector Bearer token safely.`);
+          evaluateSessionState();
+        } else {
+          displayLog(parseJson.message, false);
+        }
+      } catch (err) {
+        displayLog('Network Execution Fault: Verify runtime terminal instance status.', false);
+      }
+    }
+
+    async function queryEntities() {
+      try {
+        const response = await fetch(`${SERVER_URL}/api/v1/tasks`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` }
+        });
+        const parseJson = await response.json();
+        const display = document.getElementById('data-viewport');
+        display.innerHTML = '';
+
+        if (parseJson.data?.length === 0) {
+          display.innerHTML = `<p class="text-center text-gray-500 text-sm italic pt-12">Cluster data query trace empty. Construct a new record object above.</p>`;
+          return;
+        }
+
+        parseJson.data?.forEach(task => {
+          display.innerHTML += `
+            <div class="bg-gray-950 border border-gray-800 p-4 rounded-lg flex items-center justify-between hover:border-gray-700 transition-colors">
+              <div>
+                <h4 class="font-bold text-sm ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-100'}">${task.title}</h4>
+                <p class="text-[11px] text-gray-400 mt-0.5">Assigned Payload Owner: <span class="text-teal-400">${task.assignedTo?.email || 'Self Session'}</span> | Status Flags: <span class="capitalize text-amber-400">${task.status}</span></p>
+              </div>
+              <div class="flex gap-1.5">
+                <button onclick="mutateStatus('${task._id}', '${task.status === 'pending' ? 'completed' : 'pending'}')" class="bg-gray-900 border border-gray-800 hover:bg-gray-800 text-[11px] px-2.5 py-1.5 rounded transition-all">Toggle State</button>
+                <button onclick="dropObject('${task._id}')" class="bg-red-950/60 hover:bg-red-900 text-red-200 border border-red-900/40 text-[11px] px-2.5 py-1.5 rounded transition-all">Purge Object (Admin Only)</button>
+              </div>
+            </div>`;
+        });
+      } catch (err) {
+        displayLog('Failure resolving secondary collections mapping execution.', false);
+      }
+    }
+
+    async function createNewTask() {
+      const value = document.getElementById('t-title').value;
+      if(!value) return;
+      
+      await fetch(`${SERVER_URL}/api/v1/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+        },
+        body: JSON.stringify({ title: value })
+      });
+      document.getElementById('t-title').value = '';
+      queryEntities();
+    }
+
+    async function mutateStatus(id, value) {
+      await fetch(`${SERVER_URL}/api/v1/tasks/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+        },
+        body: JSON.stringify({ status: value })
+      });
+      queryEntities();
+    }
+
+    async function dropObject(id) {
+      const response = await fetch(`${SERVER_URL}/api/v1/tasks/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` }
+      });
+      const data = await response.json();
+      displayLog(data.message, data.success);
+      queryEntities();
+    }
+
+    function purgeSession() {
+      localStorage.clear();
+      displayLog('Local memory storage vectors explicitly cleared.');
+      evaluateSessionState();
+    }
+
+    evaluateSessionState();
+  </script>
+</body>
+</html>
